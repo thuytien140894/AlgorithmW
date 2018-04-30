@@ -30,17 +30,15 @@ module Parser
         arg <- identifier -- if there is type specified, parse it; else return Dyn
         dot 
         body <- expr
-        let ty = Dyn
         let t = fixBinding body arg 0
-        let t' = updateVarType t arg ty
         let boundVars = arg : getBoundVar body
         let freeVars = getFreeVar body boundVars
-        let t'' = fixFreeBinding t' freeVars boundVars
-        return $ Lambda ty t'' boundVars
+        let t' = fixFreeBinding t freeVars boundVars
+        return $ Lambda t' boundVars
 
     -- | Parse a variable
     var :: Parser Expr
-    var = Var (-1) TUnit <$> identifier -- the variable is first parsed as free
+    var = Var (-1) <$> identifier -- the variable is first parsed as free
 
     -- | Parse constants
     true, false, zero :: Parser Expr
