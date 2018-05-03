@@ -3,14 +3,21 @@ module Parser
     ) where 
 
     import Lexer
-    import ParseUtils
     import Syntax
-    import Type 
 
     import Data.Functor.Identity
     import Text.Parsec
     import qualified Text.Parsec.Expr as Ex
     import Text.Parsec.String (Parser)
+
+    -- | Application
+    apply :: Expr -> Expr -> Expr
+    apply Unit t2 = t2
+    apply t1 t2   = App t1 t2
+
+    -- | Recursively apply terms from the left
+    applyFromLeft :: [Expr] -> Expr
+    applyFromLeft = foldl apply Unit
 
     -- | Parse an if statement
     conditional :: Parser Expr
@@ -30,15 +37,11 @@ module Parser
         arg <- identifier -- if there is type specified, parse it; else return Dyn
         dot 
         body <- expr
-        let t = fixBinding body arg 0
-        let boundVars = arg : getBoundVar body
-        let freeVars = getFreeVar body boundVars
-        let t' = fixFreeBinding t freeVars boundVars
-        return $ Lambda t' boundVars
+        return $ Lambda arg body
 
     -- | Parse a variable
     var :: Parser Expr
-    var = Var (-1) <$> identifier -- the variable is first parsed as free
+    var = Var <$> identifier -- the variable is first parsed as free
 
     -- | Parse constants
     true, false, zero :: Parser Expr
