@@ -1,11 +1,12 @@
 module Substitution where 
 
     import Type
-    import TypeEnv
+    import TypeEnv (TypeEnv(TypeEnv))
     
     import Data.Map (Map)
-    import qualified Data.Map as Map
     import Data.Maybe (fromMaybe)
+
+    import qualified Data.Map as Map
     import qualified Data.Set as Set (fromList)
 
     -- | Mapping from type variables to types.
@@ -13,8 +14,8 @@ module Substitution where
                         deriving (Eq, Show)
 
     -- | Empty substitution.
-    emptySubs :: Substitution
-    emptySubs = Subs Map.empty
+    empty :: Substitution
+    empty = Subs Map.empty
 
     -- | Look up the type for a type variable.
     lookUp :: Substitution -> Int -> Maybe Type

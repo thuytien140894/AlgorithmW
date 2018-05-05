@@ -1,6 +1,7 @@
 module Type where 
 
     import Data.Map (Map)
+    
     import qualified Data.Map as Map
 
     type TVar = Type

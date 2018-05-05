@@ -2,7 +2,9 @@ module GlobalState where
 
     import Syntax 
     import Type
-    import TypeEnv
+    import TypeEnv (TypeEnv)
+    
+    import qualified TypeEnv
 
     import Control.Monad.Except
     import Control.Monad.State 
@@ -22,7 +24,7 @@ module GlobalState where
     runTyInfer g = evalState (runExceptT g) initialState 
       where 
         initialState = GlobalEnv 
-            { typeEnv = emptyTypeEnv
+            { typeEnv = TypeEnv.empty
             , varName = 0
             }
 
@@ -35,8 +37,16 @@ module GlobalState where
         return $ TVar n
 
     -- | Update an entry in the type environment.
-    updateTypeEnv :: String -> TypeScheme -> GlobalState () 
-    updateTypeEnv x t = do 
+    update :: String -> TypeScheme -> GlobalState () 
+    update x t = do 
         s <- get 
-        let newEnv = insertVar (typeEnv s) x t
+        let newEnv = TypeEnv.insert (typeEnv s) x t
         put s { typeEnv = newEnv }
+
+    -- | Search for a variable in the type environment.
+    lookUp :: String -> GlobalState TypeScheme
+    lookUp x = do 
+        s <- get 
+        case TypeEnv.lookUp (typeEnv s) x of 
+            Just t  -> return t 
+            Nothing -> throwError "Variable not in scope."
