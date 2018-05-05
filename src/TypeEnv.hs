@@ -1,8 +1,10 @@
 module TypeEnv where 
 
+    import GlobalState (GlobalState)
     import Type 
     import Syntax
 
+    import Control.Monad.Except (throwError)
     import Data.Map (Map)
     
     import qualified Data.Map as Map
@@ -20,5 +22,7 @@ module TypeEnv where
     insert (TypeEnv r) x t = TypeEnv $ Map.insert x t r
 
     -- | Search for a variable. 
-    lookUp :: TypeEnv -> String -> Maybe TypeScheme
-    lookUp (TypeEnv r) x = Map.lookup x r
+    lookUp :: TypeEnv -> String -> GlobalState TypeScheme
+    lookUp (TypeEnv r) x = case Map.lookup x r of 
+        Just c  -> return c 
+        Nothing -> throwError "Variable not in scope."

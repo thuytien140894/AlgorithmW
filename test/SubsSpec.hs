@@ -6,6 +6,7 @@ module SubsSpec where
     import TypeEnv
 
     import Test.Hspec 
+    
     import qualified Data.Map as Map (fromList)
 
     spec :: Spec 
