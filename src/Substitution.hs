@@ -1,8 +1,11 @@
 module Substitution where 
 
+    import GlobalState 
     import Type
     import TypeEnv (TypeEnv(TypeEnv))
     
+    import qualified GlobalState as GlobalS (newTVar)
+
     import Data.Map (Map)
     import Data.Maybe (fromMaybe)
 
@@ -16,6 +19,19 @@ module Substitution where
     -- | Empty substitution.
     empty :: Substitution
     empty = Subs Map.empty
+
+    -- | Build a new substitution by mapping a list of 
+    -- type variables to new ones.
+    new :: [TVar] -> Substitution -> GlobalState Substitution
+    new [] s = return s
+    new (TVar x:xs) s = do 
+        t <- GlobalS.newTVar
+        let s' = insert s x t
+        new xs s'
+
+    -- | Insert a new type variable.
+    insert :: Substitution -> Int -> Type -> Substitution
+    insert (Subs s) x t = Subs $ Map.insert x t s
 
     -- | Look up the type for a type variable.
     lookUp :: Substitution -> Int -> Maybe Type
