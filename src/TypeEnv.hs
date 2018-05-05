@@ -6,11 +6,14 @@ module TypeEnv where
     import Data.Map (Map)
     import qualified Data.Map as Map
 
-    data TypeEnv = TypeEnv (Map String Type)
+    -- | Mapping from variables to type schemes.
+    data TypeEnv = TypeEnv (Map String TypeScheme)
                    deriving (Eq, Show)
 
+    -- | Empty type environment.
     emptyTypeEnv :: TypeEnv
     emptyTypeEnv = TypeEnv Map.empty
 
-    insertVar :: TypeEnv -> Expr -> Type -> TypeEnv
-    insertVar (TypeEnv env) (Var x) t = TypeEnv $ Map.insert x t env
+    -- | Insert a new variable into the type environment.
+    insertVar :: TypeEnv -> String -> TypeScheme -> TypeEnv
+    insertVar (TypeEnv r) x t = TypeEnv $ Map.insert x t r

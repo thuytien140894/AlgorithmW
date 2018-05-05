@@ -27,17 +27,16 @@ module GlobalState where
             }
 
     -- | Generate a new type variable.
-    newVar :: GlobalState Type 
-    newVar = do
+    newTVar :: GlobalState Type 
+    newTVar = do
         currentState <- get 
         let n = varName currentState
         put currentState { varName = n + 1 }
         return $ TVar n
 
     -- | Update an entry in the type environment.
-    updateTypeEnv :: Expr -> GlobalState () 
-    updateTypeEnv x = do 
-        currentState <- get 
-        let n = varName currentState 
-        let newEnv = typeEnv currentState `insertVar` x $ TVar n
-        put currentState { typeEnv = newEnv, varName = n + 1 }
+    updateTypeEnv :: String -> TypeScheme -> GlobalState () 
+    updateTypeEnv x t = do 
+        s <- get 
+        let newEnv = insertVar (typeEnv s) x t
+        put s { typeEnv = newEnv }
