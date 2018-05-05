@@ -4,6 +4,7 @@ module TypeEnv where
     import Syntax
 
     import Data.Map (Map)
+    
     import qualified Data.Map as Map
 
     -- | Mapping from variables to type schemes.
@@ -11,9 +12,13 @@ module TypeEnv where
                    deriving (Eq, Show)
 
     -- | Empty type environment.
-    emptyTypeEnv :: TypeEnv
-    emptyTypeEnv = TypeEnv Map.empty
+    empty :: TypeEnv
+    empty = TypeEnv Map.empty
 
     -- | Insert a new variable into the type environment.
-    insertVar :: TypeEnv -> String -> TypeScheme -> TypeEnv
-    insertVar (TypeEnv r) x t = TypeEnv $ Map.insert x t r
+    insert :: TypeEnv -> String -> TypeScheme -> TypeEnv
+    insert (TypeEnv r) x t = TypeEnv $ Map.insert x t r
+
+    -- | Search for a variable. 
+    lookUp :: TypeEnv -> String -> Maybe TypeScheme
+    lookUp (TypeEnv r) x = Map.lookup x r
