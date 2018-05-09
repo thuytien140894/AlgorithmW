@@ -68,7 +68,7 @@ module TypeInferSpec where
             context "TVar 1->TVar 3 and TVar 1->TVar 2" $
                 it "should be 2->3, 3->2" $
                     unwrap (unify (Arr (TVar 1) (TVar 3)) (Arr (TVar 1) (TVar 2)))  
-                    `shouldBe` Right (Subs (Map.fromList [(2,TVar 3),(3,TVar 2)])) 
+                    `shouldBe` Right (Subs (Map.fromList [(3,TVar 2)])) 
 
             context "TVar 1->TVar 1 and Nat->TVar 2" $
                 it "should be 1->Nat, 2->Nat" $
@@ -109,7 +109,17 @@ module TypeInferSpec where
             context "(\\m. (\\x. x) m) true" $ 
                 it "should be Bool" $ do
                     let Right e = parseExpr "(\\m. (\\x. x) m) true"
-                    typeInfer e `shouldBe` Right (TVar 1)
+                    typeInfer e `shouldBe` Right Bool
+
+            context "(\\m. (\\x. x) m) (\\x. x)" $ 
+                it "should be Bool" $ do
+                    let Right e = parseExpr "(\\m. (\\x. x) m) (\\x. x)"
+                    typeInfer e `shouldBe` Right (Arr (TVar 3) (TVar 3))
+
+            context "(\\n. (\\m. (\\x. x) m) n) (\\x. x)" $ 
+                it "should be Bool" $ do
+                    let Right e = parseExpr "(\\n. (\\m. (\\x. x) m) n) (\\x. x)"
+                    typeInfer e `shouldBe` Right (Arr (TVar 5) (TVar 5))
 
             context "(\\n. (\\m. (\\x. n (m 0)))))" $ 
                 it "should be (3->4)->((Nat->3)->(2->4))" $ do

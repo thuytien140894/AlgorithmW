@@ -30,12 +30,7 @@ module Substitution where
         new xs s'
 
     -- | Insert a new type variable/type pair.
-    -- If a new pair contains both type variables, then 
-    -- insert its inverse as well.
     insert :: Substitution -> Int -> Type -> Substitution
-    insert (Subs s) x (TVar y) = Subs $ Map.insert y (TVar x) s'
-      where 
-        s' = Map.insert x (TVar y) s
     insert (Subs s) x t = Subs $ Map.insert x t s
 
     -- | Look up the type for a type variable.
@@ -52,9 +47,14 @@ module Substitution where
     subsTScheme s (ForAll xs c) = ForAll xs $ removeBoundVars s xs `subsTScheme` c
 
     -- | Apply a substitution to a type with type variables.
+    -- There can be mappings between type variables, and so this 
+    -- function keeps applying until the resulting type is not mapped 
+    -- to anything.
     subsTVar :: Substitution -> Type -> Type 
     subsTVar s t = case t of 
-        TVar x    -> fromMaybe t $ lookUp s x
+        TVar x    -> case lookUp s x of 
+                         Just t  -> subsTVar s t 
+                         Nothing -> t
         Arr t1 t2 -> Arr (subsTVar s t1) (subsTVar s t2)
         _         -> t 
 
