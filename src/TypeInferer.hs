@@ -10,6 +10,8 @@ module TypeInferer where
     import qualified Substitution as Subs
     import qualified TypeEnv 
 
+    import Control.Monad.Except (throwError)
+
     -- | Instantiate a type scheme by 
     -- replacing all the quantified type variables 
     -- with new type variables.
@@ -22,7 +24,26 @@ module TypeInferer where
 
     -- | Return a substitution that unifies two types.
     unify :: Type -> Type -> GlobalState Substitution
-    unify s t = return Subs.empty
+    unify t1 t2 
+        | t1 == t2                = return Subs.empty
+    unify (TVar x) t2
+        | occurCheck x t2         = throwError "Occur check"
+        | otherwise               = return $ Subs.insert Subs.empty x t2
+    unify t1 (TVar x) 
+        | occurCheck x t1         = throwError "Occur check"
+        | otherwise               = return $ Subs.insert Subs.empty x t1
+    unify (Arr s1 t1) (Arr s2 t2) = do s'  <- unify s1 s2 
+                                       s'' <- unify (Subs.subsTVar s' t1) (Subs.subsTVar s' t2)
+                                       return $ Subs.compose s'' s'
+    unify _ _                     = throwError "Incompatible types"
+
+    -- | Check if a type variable occurs in a given type.
+    occurCheck :: Int -> Type -> Bool
+    occurCheck x t = case t of
+        TVar y 
+            | y == x -> True 
+        Arr s t      -> occurCheck x s || occurCheck x t
+        _            -> False
 
     -- | Infer the type for an expression given a typing environment. 
     -- Also derive a substitution to be used for next type inference.
@@ -42,9 +63,9 @@ module TypeInferer where
                           let r' = Subs.subsTEnv s1 r
                           (s2, t2) <- typeInfer' r' e2
                           t <- GlobalS.newTVar
-                          v <- unify (Subs.subsTVar s2 t1) (Arr t2 t)
-                          let s = Subs.compose v $ Subs.compose s2 s1
-                          return (s, Subs.subsTVar v t)
+                          s3 <- unify (Subs.subsTVar s2 t1) (Arr t2 t)
+                          let s = Subs.compose s3 $ Subs.compose s2 s1
+                          return (s, Subs.subsTVar s3 t)
 
     -- | Infer the type for an expression.
     typeInfer :: Expr -> Either String Type

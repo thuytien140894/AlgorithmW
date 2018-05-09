@@ -29,8 +29,13 @@ module Substitution where
         let s' = insert s x t
         new xs s'
 
-    -- | Insert a new type variable.
+    -- | Insert a new type variable/type pair.
+    -- If a new pair contains both type variables, then 
+    -- insert its inverse as well.
     insert :: Substitution -> Int -> Type -> Substitution
+    insert (Subs s) x (TVar y) = Subs $ Map.insert y (TVar x) s'
+      where 
+        s' = Map.insert x (TVar y) s
     insert (Subs s) x t = Subs $ Map.insert x t s
 
     -- | Look up the type for a type variable.
