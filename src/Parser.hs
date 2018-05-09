@@ -10,16 +10,16 @@ module Parser
     import qualified Text.Parsec.Expr as Ex
     import Text.Parsec.String (Parser)
 
-    -- | Application
+    -- | Application.
     apply :: Expr -> Expr -> Expr
     apply Unit t2 = t2
     apply t1 t2   = App t1 t2
 
-    -- | Recursively apply terms from the left
+    -- | Recursively apply terms from the left.
     applyFromLeft :: [Expr] -> Expr
     applyFromLeft = foldl apply Unit
 
-    -- | Parse an if statement
+    -- | Parse an if statement.
     conditional :: Parser Expr
     conditional = do
         reserved "if"
@@ -30,34 +30,45 @@ module Parser
         fl <- expr
         return $ If cond tr fl
 
-    -- | Parse an abstraction
+    -- | Parse a let expression.
+    letExpr :: Parser Expr 
+    letExpr = do 
+        reserved "let"
+        x <- identifier
+        reservedOp "=" 
+        val <- expr
+        reserved "in"
+        body <- expr
+        return $ Let x val body
+
+    -- | Parse an abstraction.
     lambda :: Parser Expr
     lambda = do
-        reservedOp "\\" >> whiteSpace
-        arg <- identifier -- if there is type specified, parse it; else return Dyn
+        reservedOp "\\" 
+        x <- identifier 
         dot 
         body <- expr
-        return $ Lambda arg body
+        return $ Lambda x body
 
-    -- | Parse a variable
+    -- | Parse a variable.
     var :: Parser Expr
-    var = Var <$> identifier -- the variable is first parsed as free
+    var = Var <$> identifier 
 
-    -- | Parse constants
+    -- | Parse constants.
     true, false, zero :: Parser Expr
     true  = reserved "true" >> return Tru
     false = reserved "false" >> return Fls
     zero  = reserved "0" >> return Zero
 
-    -- | Apply two terms that are separated by a space
+    -- | Apply two terms that are separated by a space.
     app :: Parser Expr
     app = applyFromLeft <$> sepBy1 expr' whiteSpace
 
-    -- | Parse an application which consists a sequence of terms
+    -- | Parse an application which consists a sequence of terms.
     expr :: Parser Expr
     expr = app 
 
-    -- | Prefix operators
+    -- | Prefix operators.
     prefixTable :: Ex.OperatorTable String () Identity Expr
     prefixTable = [ [ Ex.Prefix $ reserved "succ"   >> return Succ
                     , Ex.Prefix $ reserved "pred"   >> return Pred
@@ -65,11 +76,11 @@ module Parser
                     ]
                   ]
 
-    -- | Parse an arithmetic expression such as succ, pred, and iszero
+    -- | Parse an arithmetic expression such as succ, pred, and iszero.
     expr' :: Parser Expr
     expr' = Ex.buildExpressionParser prefixTable expr''
 
-    -- | Parse individual terms
+    -- | Parse individual terms.
     expr'' :: Parser Expr
     expr'' = parens expr
         <|> true
@@ -78,8 +89,8 @@ module Parser
         <|> var
         <|> lambda
         <|> conditional
+        <|> letExpr
 
-    -- | Parse a string
+    -- | Parse a string.
     parseExpr :: String -> Either ParseError Expr
     parseExpr = parse (whiteSpace >> expr) "" 
-
