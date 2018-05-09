@@ -1,5 +1,6 @@
 module TypeInferer where
 
+    import Error
     import GlobalState (GlobalState) 
     import Substitution (Substitution)
     import Syntax
@@ -27,15 +28,15 @@ module TypeInferer where
     unify t1 t2 
         | t1 == t2                = return Subs.empty
     unify (TVar x) t2
-        | occurCheck x t2         = throwError "Occur check"
+        | occurCheck x t2         = throwError $ Occur x t2
         | otherwise               = return $ Subs.insert Subs.empty x t2
     unify t1 (TVar x) 
-        | occurCheck x t1         = throwError "Occur check"
+        | occurCheck x t1         = throwError $ Occur x t1
         | otherwise               = return $ Subs.insert Subs.empty x t1
     unify (Arr s1 t1) (Arr s2 t2) = do s'  <- unify s1 s2 
                                        s'' <- unify (Subs.subsTVar s' t1) (Subs.subsTVar s' t2)
                                        return $ Subs.compose s'' s'
-    unify _ _                     = throwError "Incompatible types"
+    unify t1 t2                   = throwError $ Mismatch t1 t2
 
     -- | Check if a type variable occurs in a given type.
     occurCheck :: Int -> Type -> Bool
@@ -101,7 +102,7 @@ module TypeInferer where
                           return (s, Subs.subsTVar s3 t)
 
     -- | Infer the type for an expression.
-    typeInfer :: Expr -> Either String Type
+    typeInfer :: Expr -> Either Error Type
     typeInfer e = case GlobalS.runTyInfer $ typeInfer' TypeEnv.empty e of 
         Right (s, t) -> Right t 
         Left err     -> Left err 

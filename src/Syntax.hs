@@ -2,6 +2,7 @@ module Syntax where
 
     import Type
 
+    -- | Abstract syntax tree.
     data Expr = Unit                -- ^ unit
               | Tru                 -- ^ true
               | Fls                 -- ^ false

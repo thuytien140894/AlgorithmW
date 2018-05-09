@@ -1,5 +1,6 @@
 module TypeEnv where 
 
+    import Error
     import GlobalState (GlobalState)
     import Type 
     import Syntax
@@ -25,4 +26,4 @@ module TypeEnv where
     lookUp :: TypeEnv -> String -> GlobalState TypeScheme
     lookUp (TypeEnv r) x = case Map.lookup x r of 
         Just c  -> return c 
-        Nothing -> throwError "Variable not in scope."
+        Nothing -> throwError $ NotBound x

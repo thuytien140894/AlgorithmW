@@ -6,10 +6,13 @@ module Type where
 
     type TVar = Type
 
+    -- | Type scheme, which is either a type itself, 
+    -- or a type that includes quantified type variables.
     data TypeScheme = ForAll [TVar] TypeScheme
                     | Scheme Type
                       deriving (Eq, Show)
 
+    -- | Type system.
     data Type = TVar Int       -- ^ Type variable
               | Bool           -- ^ Boolean
               | Nat            -- ^ Natural numbers

@@ -1,5 +1,6 @@
 module TypeInferSpec where
 
+    import Error
     import GlobalState 
     import Parser
     import Substitution as Subs
@@ -33,7 +34,7 @@ module TypeInferSpec where
             context "Bool and Nat" $
                 it "should be error" $ 
                     unwrap (unify Bool Nat) 
-                    `shouldBe` Left "Incompatible types"
+                    `shouldBe` Left (Mismatch Bool Nat)
 
             context "Bool and TVar 1" $
                 it "should be 1->Bool" $
@@ -58,12 +59,12 @@ module TypeInferSpec where
             context "Nat and TVar 1->TVar 2" $
                 it "should be error" $
                     unwrap (unify Nat (Arr (TVar 1) (TVar 2))) 
-                    `shouldBe` Left "Incompatible types"
+                    `shouldBe` Left (Mismatch Nat (Arr (TVar 1) (TVar 2)))
 
             context "TVar 1 and TVar 1->Nat" $
                 it "should be error" $
                     unwrap (unify (TVar 1) (Arr (TVar 1) Nat)) 
-                    `shouldBe` Left "Occur check"
+                    `shouldBe` Left (Occur 1 (Arr (TVar 1) Nat))
 
             context "TVar 1->TVar 3 and TVar 1->TVar 2" $
                 it "should be 2->3, 3->2" $
@@ -104,7 +105,7 @@ module TypeInferSpec where
             context "if true then true else 0" $ 
                 it "should be error" $ do
                     let Right e = parseExpr "if true then true else 0"
-                    typeInfer e `shouldBe` Left "Incompatible types"
+                    typeInfer e `shouldBe` Left (Mismatch Bool Nat)
 
             context "(\\x. if x then 0 else succ 0)" $ 
                 it "should be Bool->Nat" $ do
@@ -144,7 +145,7 @@ module TypeInferSpec where
             context "(\\x. x true) (\\x. succ x)" $ 
                 it "should be Nat" $ do
                     let Right e = parseExpr "(\\x. x true) (\\x. succ x)"
-                    typeInfer e `shouldBe` Left "Incompatible types"
+                    typeInfer e `shouldBe` Left (Mismatch Bool Nat)
 
             context "(\\x. x) 0" $ 
                 it "should be Nat" $ do
