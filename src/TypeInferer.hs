@@ -45,26 +45,59 @@ module TypeInferer where
         Arr s t      -> occurCheck x s || occurCheck x t
         _            -> False
 
+    -- | Helper function to infer types for arithmetic expressions.
+    typeInferArith :: TypeEnv -> Expr -> Type -> GlobalState (Substitution, Type)
+    typeInferArith r e retTy = do 
+        (s1, t1) <- typeInfer' r e
+        t <- GlobalS.newTVar
+        s2 <- unify (Arr Nat retTy) (Arr t1 t)
+        let s = Subs.compose s2 s1 
+        return (s, Subs.subsTVar s2 t)
+
     -- | Infer the type for an expression given a typing environment. 
     -- Also derive a substitution to be used for next type inference.
     typeInfer' :: TypeEnv -> Expr -> GlobalState (Substitution, Type)
     typeInfer' r e = case e of 
+        -- | Constants
         Tru         -> return (Subs.empty, Bool)
         Fls         -> return (Subs.empty, Bool)
         Zero        -> return (Subs.empty, Nat)
+
+        -- | Arithmetic
+        Succ e'     -> typeInferArith r e' Nat
+        Pred e'     -> typeInferArith r e' Nat
+        IsZero e'   -> typeInferArith r e' Bool
+
+        -- | Conditional
+        If e1 e2 e3 -> do (s1, t1) <- typeInfer' r e1
+                          s1' <- unify Bool t1
+                          let s1'' = Subs.compose s1 s1'
+                          let r1 = Subs.subsTEnv s1'' r
+                          (s2, t2) <- typeInfer' r1 e2
+                          let r2 = Subs.subsTEnv s2 r1 
+                          (s3, t3) <- typeInfer' r2 e3
+                          s4 <- unify t2 t3
+                          let s' = Subs.composeList [s4, s3, s2, s1'']  
+                          return (s', Subs.subsTVar s4 t2)
+
+        -- | Variable
         Var x       -> do c <- TypeEnv.lookUp r x
                           t <- instantiate c
                           return (Subs.empty, t)
+
+        -- | Abstraction
         Lambda x e' -> do t <- GlobalS.newTVar
                           let r' = TypeEnv.insert r x $ Scheme t
                           (s', t') <- typeInfer' r' e'
                           return (s', Subs.subsTVar s' t `Arr` t') 
+
+        -- | Application
         App e1 e2   -> do (s1, t1) <- typeInfer' r e1
                           let r' = Subs.subsTEnv s1 r
                           (s2, t2) <- typeInfer' r' e2
                           t <- GlobalS.newTVar
                           s3 <- unify (Subs.subsTVar s2 t1) (Arr t2 t)
-                          let s = Subs.compose s3 $ Subs.compose s2 s1
+                          let s = Subs.composeList [s3, s2, s1]
                           return (s, Subs.subsTVar s3 t)
 
     -- | Infer the type for an expression.

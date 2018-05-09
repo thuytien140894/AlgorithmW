@@ -86,6 +86,66 @@ module TypeInferSpec where
                     let Right e = parseExpr "(\\x. 0) 0"
                     typeInfer e `shouldBe` Right Nat
 
+            context "succ 0" $ 
+                it "should be Nat" $ do
+                    let Right e = parseExpr "succ 0"
+                    typeInfer e `shouldBe` Right Nat 
+
+            context "(\\x. x) succ 0" $ 
+                it "should be Nat" $ do
+                    let Right e = parseExpr "(\\x. x) succ 0"
+                    typeInfer e `shouldBe` Right Nat 
+
+            context "(\\x. if iszero x then 0 else succ 0) 0" $ 
+                it "should be Nat" $ do
+                    let Right e = parseExpr "(\\x. if iszero x then 0 else succ 0) 0"
+                    typeInfer e `shouldBe` Right Nat 
+
+            context "if true then true else 0" $ 
+                it "should be error" $ do
+                    let Right e = parseExpr "if true then true else 0"
+                    typeInfer e `shouldBe` Left "Incompatible types"
+
+            context "(\\x. if x then 0 else succ 0)" $ 
+                it "should be Bool->Nat" $ do
+                    let Right e = parseExpr "(\\x. if x then 0 else succ 0)"
+                    typeInfer e `shouldBe` Right (Arr Bool Nat)
+
+            context "(\\m. (\\x. if x then m 0 else m (succ 0))))" $ 
+                it "should be (Nat->4)->(Bool->4)" $ do
+                    let Right e = parseExpr "(\\m. (\\x. if x then m 0 else m (succ 0))))"
+                    typeInfer e `shouldBe` Right (Arr (Arr Nat (TVar 4)) (Arr Bool (TVar 4)))
+
+            context "((\\m. (\\x. if true then x else m x)) (\\x. x)) 0" $ 
+                it "should be Nat" $ do
+                    let Right e = parseExpr "((\\m. (\\x. if true then x else m x)) (\\x. x)) 0"
+                    typeInfer e `shouldBe` Right Nat
+
+            context "(\\m. (\\x. if true then x else m x))" $ 
+                it "should be Nat" $ do
+                    let Right e = parseExpr "(\\m. (\\x. if true then x else m x))"
+                    typeInfer e `shouldBe` Right (Arr (Arr (TVar 2) (TVar 2)) (Arr (TVar 2) (TVar 2)))
+
+            context "((\\m. (\\x. if m then x else succ x)) true) 0" $ 
+                it "should be Nat" $ do
+                    let Right e = parseExpr "((\\m. (\\x. if m then x else succ x)) true) 0"
+                    typeInfer e `shouldBe` Right Nat
+
+            context "(\\x. if true then x else succ x)" $ 
+                it "should be Nat->Nat" $ do
+                    let Right e = parseExpr "(\\x. if true then x else succ x)"
+                    typeInfer e `shouldBe` Right (Arr Nat Nat)
+
+            context "(\\x. x 0) (\\x. succ x)" $ 
+                it "should be Nat" $ do
+                    let Right e = parseExpr "(\\x. x 0) (\\x. succ x)"
+                    typeInfer e `shouldBe` Right Nat 
+
+            context "(\\x. x true) (\\x. succ x)" $ 
+                it "should be Nat" $ do
+                    let Right e = parseExpr "(\\x. x true) (\\x. succ x)"
+                    typeInfer e `shouldBe` Left "Incompatible types"
+
             context "(\\x. x) 0" $ 
                 it "should be Nat" $ do
                     let Right e = parseExpr "(\\x. x) 0"
@@ -115,6 +175,11 @@ module TypeInferSpec where
                 it "should be Bool" $ do
                     let Right e = parseExpr "(\\m. (\\x. x) m) (\\x. x)"
                     typeInfer e `shouldBe` Right (Arr (TVar 3) (TVar 3))
+
+            context "(\\m. (\\x. x m) (\\x. x)) 0" $ 
+                it "should be Nat" $ do
+                    let Right e = parseExpr "((\\m. (\\x. x m)) 0) (\\x. x)"
+                    typeInfer e `shouldBe` Right Nat
 
             context "(\\n. (\\m. (\\x. x) m) n) (\\x. x)" $ 
                 it "should be Bool" $ do

@@ -86,4 +86,8 @@ module Substitution where
         mirror k a = case a of 
             TVar x 
                 | k == x -> False
-            _            -> True     
+            _            -> True 
+            
+    -- | Compose a list of substitutions.
+    composeList :: [Substitution] -> Substitution
+    composeList = foldr compose empty
