@@ -4,6 +4,7 @@ module SubsSpec where
     import Syntax
     import Type
     import TypeEnv
+    import TypeScheme
 
     import Test.Hspec 
     

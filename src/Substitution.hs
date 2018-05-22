@@ -2,6 +2,7 @@ module Substitution where
 
     import GlobalState 
     import Type
+    import TypeScheme
     import TypeEnv (TypeEnv(TypeEnv))
     
     import qualified GlobalState as GlobalS (newTVar)
@@ -39,7 +40,7 @@ module Substitution where
 
     -- | Apply a substitution to the typing environment.
     subsTEnv :: Substitution -> TypeEnv -> TypeEnv 
-    subsTEnv s (TypeEnv r) = TypeEnv $ Map.map (subsTScheme s) r
+    subsTEnv s (TypeEnv r) = TypeEnv $ subsTScheme s `Map.map` r
 
     -- | Replace free type variables in a type scheme.
     subsTScheme :: Substitution -> TypeScheme -> TypeScheme
@@ -55,7 +56,7 @@ module Substitution where
         TVar x    -> case lookUp s x of 
                          Just t  -> subsTVar s t 
                          Nothing -> t
-        Arr t1 t2 -> Arr (subsTVar s t1) (subsTVar s t2)
+        Arr t1 t2 -> subsTVar s t1 `Arr` subsTVar s t2
         _         -> t 
 
     -- | Remove all the quantified variables in a type scheme 

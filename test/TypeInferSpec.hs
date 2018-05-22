@@ -5,7 +5,9 @@ module TypeInferSpec where
     import Parser
     import Substitution as Subs
     import Type
+    import TypeEnv
     import TypeInferer
+    import TypeScheme
 
     import qualified TypeEnv
 
@@ -16,7 +18,7 @@ module TypeInferSpec where
     spec :: Spec 
     spec = do 
         describe "instantiates" $ do
-            context "forall (1,2,3) (1->(2->3))" $ 
+            context "forall [1,2,3] (1->(2->3))" $ 
                 it "should be (4->(5->6))" $ do
                     let c = ForAll [TVar 1,TVar 2,TVar 3] (Scheme (Arr (TVar 1) (Arr (TVar 2) (TVar 3))))
                     let s = GlobalEnv { varName = 4 }
@@ -30,6 +32,21 @@ module TypeInferSpec where
                     runTyInfer' (instantiate c) s
                     `shouldBe` Right (Arr (Arr (TVar 8) (Arr (TVar 5) (TVar 7))) (TVar 6))
 
+        describe "generalizes" $ do
+            context "{x: forall [2,3] 1->2->3} and 1->4" $ 
+                it "should be forall [4] 1->4" $ do
+                    let r = TypeEnv $ Map.fromList [("x", ForAll [TVar 2,TVar 3] (Scheme (Arr (TVar 1) (Arr (TVar 2) (TVar 3)))))]
+                    let t = Arr (TVar 1) (TVar 4)
+                    generalize r t 
+                    `shouldBe` ForAll [TVar 4] (Scheme (Arr (TVar 1) (TVar 4)))
+
+            context "{x: forall [2,3] 1->2->3} and 1->4" $ 
+                it "should be 1->4" $ do
+                    let r = TypeEnv $ Map.fromList [("x", ForAll [TVar 2,TVar 3] (Scheme (Arr (TVar 1) (Arr (TVar 2) (TVar 3))))),("y", Scheme (TVar 4))]
+                    let t = Arr (TVar 1) (TVar 4)
+                    generalize r t 
+                    `shouldBe` Scheme (Arr (TVar 1) (TVar 4))
+                             
         describe "unifies" $ do
             context "Bool and Nat" $
                 it "should be error" $ 
@@ -191,3 +208,28 @@ module TypeInferSpec where
                 it "should be (3->4)->((Nat->3)->(2->4))" $ do
                     let Right e = parseExpr "(\\n. (\\m. (\\x. n (m 0)))))"
                     typeInfer e `shouldBe` Right (Arr (Arr (TVar 3) (TVar 4)) (Arr (Arr Nat (TVar 3)) (Arr (TVar 2) (TVar 4))))
+
+            context "let m = \\x. x in m m" $ 
+                it "should be 4->4" $ do
+                    let Right e = parseExpr "let m = \\x. x in m m"
+                    typeInfer e `shouldBe` Right (Arr (TVar 4) (TVar 4))
+
+            context "let m = (\\x. let y = x in y) in m m" $ 
+                it "should be 4->4" $ do
+                    let Right e = parseExpr "let m = (\\x. let y = x in y) in m m"
+                    typeInfer e `shouldBe` Right (Arr (TVar 4) (TVar 4))
+
+            context "let m = (\\x. let y = x in y) in (m m) succ 0" $ 
+                it "should be Nat" $ do
+                    let Right e = parseExpr "let m = (\\x. let y = x in y) in (m m) succ 0"
+                    typeInfer e `shouldBe` Right Nat
+
+            context "\\x. x x" $ 
+                it "should be occur error" $ do
+                    let Right e = parseExpr "\\x. x x"
+                    typeInfer e `shouldBe` Left (Occur 0 (Arr (TVar 0) (TVar 1)))
+
+            context "\\m. let y = m in let x = y true in x" $ 
+                it "should be Bool->1->1" $ do
+                    let Right e = parseExpr "\\m. let y = m in let x = y true in x"
+                    typeInfer e `shouldBe` Right (Arr (Arr Bool (TVar 1)) (TVar 1))

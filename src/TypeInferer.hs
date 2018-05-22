@@ -6,12 +6,23 @@ module TypeInferer where
     import Syntax
     import Type
     import TypeEnv (TypeEnv)
+    import TypeScheme
 
     import qualified GlobalState as GlobalS
     import qualified Substitution as Subs
     import qualified TypeEnv 
 
     import Control.Monad.Except (throwError)
+    import Data.List ((\\))
+
+    -- | Determine the closure of a type with respect 
+    -- to a type environment.  
+    generalize :: TypeEnv -> Type -> TypeScheme
+    generalize r t = if null xs 
+                     then Scheme t 
+                     else ForAll xs (Scheme t) 
+      where 
+        xs = Type.freeVars t \\ TypeEnv.freeVars r
 
     -- | Instantiate a type scheme by 
     -- replacing all the quantified type variables 
@@ -100,6 +111,15 @@ module TypeInferer where
                           s3 <- unify (Subs.subsTVar s2 t1) (Arr t2 t)
                           let s = Subs.composeList [s3, s2, s1]
                           return (s, Subs.subsTVar s3 t)
+
+        -- | Let expressions
+        Let x e1 e2 -> do (s1, t1) <- typeInfer' r e1
+                          let r1 = Subs.subsTEnv s1 r 
+                          let r2 = TypeEnv.insert r x $ generalize r1 t1
+                          let r3 = Subs.subsTEnv s1 r2 
+                          (s2, t2) <- typeInfer' r3 e2
+                          let s = Subs.compose s2 s1
+                          return (s, t2)
 
     -- | Infer the type for an expression.
     typeInfer :: Expr -> Either Error Type
