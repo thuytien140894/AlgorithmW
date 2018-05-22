@@ -71,18 +71,18 @@ module TypeInferer where
     typeInfer' :: TypeEnv -> Expr -> GlobalState (Substitution, Type)
     typeInfer' r e = case e of 
         -- | Constants
-        Tru         -> return (Subs.empty, Bool)
-        Fls         -> return (Subs.empty, Bool)
+        Tru         -> return (Subs.empty, Boolean)
+        Fls         -> return (Subs.empty, Boolean)
         Zero        -> return (Subs.empty, Nat)
 
         -- | Arithmetic
         Succ e'     -> typeInferArith r e' Nat
         Pred e'     -> typeInferArith r e' Nat
-        IsZero e'   -> typeInferArith r e' Bool
+        IsZero e'   -> typeInferArith r e' Boolean
 
         -- | Conditional
         If e1 e2 e3 -> do (s1, t1) <- typeInfer' r e1
-                          s1' <- unify Bool t1
+                          s1' <- unify Boolean t1
                           let s1'' = Subs.compose s1 s1'
                           let r1 = Subs.subsTEnv s1'' r
                           (s2, t2) <- typeInfer' r1 e2

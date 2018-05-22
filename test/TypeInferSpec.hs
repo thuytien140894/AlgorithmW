@@ -50,18 +50,18 @@ module TypeInferSpec where
         describe "unifies" $ do
             context "Bool and Nat" $
                 it "should be error" $ 
-                    unwrap (unify Bool Nat) 
-                    `shouldBe` Left (Mismatch Bool Nat)
+                    unwrap (unify Boolean Nat) 
+                    `shouldBe` Left (Mismatch Boolean Nat)
 
             context "Bool and TVar 1" $
                 it "should be 1->Bool" $
-                    unwrap (unify Bool (TVar 1)) 
-                    `shouldBe` Right (Subs (Map.fromList [(1,Bool)]))
+                    unwrap (unify Boolean (TVar 1)) 
+                    `shouldBe` Right (Subs (Map.fromList [(1,Boolean)]))
 
             context "TVar 1->Bool and Nat->TVar 2" $
                 it "should be 1->Nat, 2->Bool" $ 
-                    unwrap (unify (Arr (TVar 1) Bool) (Arr Nat (TVar 2)))
-                    `shouldBe` Right (Subs (Map.fromList [(1,Nat),(2,Bool)])) 
+                    unwrap (unify (Arr (TVar 1) Boolean) (Arr Nat (TVar 2)))
+                    `shouldBe` Right (Subs (Map.fromList [(1,Nat),(2,Boolean)])) 
 
             context "Nat and Nat" $
                 it "should be empty" $
@@ -122,17 +122,17 @@ module TypeInferSpec where
             context "if true then true else 0" $ 
                 it "should be error" $ do
                     let Right e = parseExpr "if true then true else 0"
-                    typeInfer e `shouldBe` Left (Mismatch Bool Nat)
+                    typeInfer e `shouldBe` Left (Mismatch Boolean Nat)
 
             context "(\\x. if x then 0 else succ 0)" $ 
                 it "should be Bool->Nat" $ do
                     let Right e = parseExpr "(\\x. if x then 0 else succ 0)"
-                    typeInfer e `shouldBe` Right (Arr Bool Nat)
+                    typeInfer e `shouldBe` Right (Arr Boolean Nat)
 
             context "(\\m. (\\x. if x then m 0 else m (succ 0))))" $ 
                 it "should be (Nat->4)->(Bool->4)" $ do
                     let Right e = parseExpr "(\\m. (\\x. if x then m 0 else m (succ 0))))"
-                    typeInfer e `shouldBe` Right (Arr (Arr Nat (TVar 4)) (Arr Bool (TVar 4)))
+                    typeInfer e `shouldBe` Right (Arr (Arr Nat (TVar 4)) (Arr Boolean (TVar 4)))
 
             context "((\\m. (\\x. if true then x else m x)) (\\x. x)) 0" $ 
                 it "should be Nat" $ do
@@ -162,7 +162,7 @@ module TypeInferSpec where
             context "(\\x. x true) (\\x. succ x)" $ 
                 it "should be Nat" $ do
                     let Right e = parseExpr "(\\x. x true) (\\x. succ x)"
-                    typeInfer e `shouldBe` Left (Mismatch Bool Nat)
+                    typeInfer e `shouldBe` Left (Mismatch Boolean Nat)
 
             context "(\\x. x) 0" $ 
                 it "should be Nat" $ do
@@ -187,7 +187,7 @@ module TypeInferSpec where
             context "(\\m. (\\x. x) m) true" $ 
                 it "should be Bool" $ do
                     let Right e = parseExpr "(\\m. (\\x. x) m) true"
-                    typeInfer e `shouldBe` Right Bool
+                    typeInfer e `shouldBe` Right Boolean
 
             context "(\\m. (\\x. x) m) (\\x. x)" $ 
                 it "should be Bool" $ do
@@ -232,4 +232,4 @@ module TypeInferSpec where
             context "\\m. let y = m in let x = y true in x" $ 
                 it "should be Bool->1->1" $ do
                     let Right e = parseExpr "\\m. let y = m in let x = y true in x"
-                    typeInfer e `shouldBe` Right (Arr (Arr Bool (TVar 1)) (TVar 1))
+                    typeInfer e `shouldBe` Right (Arr (Arr Boolean (TVar 1)) (TVar 1))

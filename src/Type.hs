@@ -2,7 +2,7 @@ module Type where
 
     -- | Type system.
     data Type = TVar Int       -- ^ Type variable
-              | Bool           -- ^ Boolean
+              | Boolean        -- ^ Boolean
               | Nat            -- ^ Natural numbers
               | Arr Type Type  -- ^ T->T 
                 deriving (Eq, Show)
@@ -10,6 +10,6 @@ module Type where
     -- | Find all type variables in a type.
     freeVars :: Type -> [Type]
     freeVars (TVar x) = [TVar x]
-    freeVars Bool = []
+    freeVars Boolean = []
     freeVars Nat = []
     freeVars (Arr t1 t2) = freeVars t1 ++ freeVars t2
