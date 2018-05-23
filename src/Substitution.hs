@@ -2,13 +2,11 @@ module Substitution where
 
     import GlobalState 
     import Type
-    import TypeScheme
     import TypeEnv (TypeEnv(TypeEnv))
     
     import qualified GlobalState as GlobalS (newTVar)
 
     import Data.Map (Map)
-    import Data.Maybe (fromMaybe)
 
     import qualified Data.Map as Map
     import qualified Data.Set as Set (fromList)
@@ -16,6 +14,35 @@ module Substitution where
     -- | Mapping from type variables to types.
     data Substitution = Subs (Map Int Type)
                         deriving (Eq, Show)
+
+    -- | Type class to perform substitution.
+    class Substitutable a where 
+        subs :: Substitution -> a -> a
+
+    -- | Apply a substitution to a type with type variables.
+    instance Substitutable Type where
+        subs s (TVar x)    = case lookUp s x of 
+            -- If a type variable is mapped to another one, 
+            -- keep applying substitution until the resulting 
+            -- type is not mapped to anything.
+            Just t  -> subs s t 
+            Nothing -> TVar x
+        subs s (Arr t1 t2) = subs s t1 `Arr` subs s t2
+        subs s t           = t
+
+    -- | Apply a substitution to a type scheme. 
+    instance Substitutable TypeScheme where 
+        subs s (Scheme t)    = Scheme $ subs s t
+        subs s (ForAll xs c) = ForAll xs c'
+          where 
+            -- | Only substitute free variables, and so 
+            -- remove all quantified variables in the type 
+            -- scheme from s.
+            c' = removeBoundVars s xs `subs` c
+
+    -- | Apply a substitution to the typing environment. 
+    instance Substitutable TypeEnv where 
+        subs s (TypeEnv r) = TypeEnv $ subs s `Map.map` r
 
     -- | Empty substitution.
     empty :: Substitution
@@ -38,27 +65,6 @@ module Substitution where
     lookUp :: Substitution -> Int -> Maybe Type
     lookUp (Subs s) x = Map.lookup x s
 
-    -- | Apply a substitution to the typing environment.
-    subsTEnv :: Substitution -> TypeEnv -> TypeEnv 
-    subsTEnv s (TypeEnv r) = TypeEnv $ subsTScheme s `Map.map` r
-
-    -- | Replace free type variables in a type scheme.
-    subsTScheme :: Substitution -> TypeScheme -> TypeScheme
-    subsTScheme s (Scheme t) = Scheme $ subsTVar s t
-    subsTScheme s (ForAll xs c) = ForAll xs $ removeBoundVars s xs `subsTScheme` c
-
-    -- | Apply a substitution to a type with type variables.
-    -- There can be mappings between type variables, and so this 
-    -- function keeps applying until the resulting type is not mapped 
-    -- to anything.
-    subsTVar :: Substitution -> Type -> Type 
-    subsTVar s t = case t of 
-        TVar x    -> case lookUp s x of 
-                         Just t  -> subsTVar s t 
-                         Nothing -> t
-        Arr t1 t2 -> subsTVar s t1 `Arr` subsTVar s t2
-        _         -> t 
-
     -- | Remove all the quantified variables in a type scheme 
     -- from a substitution.
     removeBoundVars :: Substitution -> [TVar] -> Substitution
@@ -80,7 +86,7 @@ module Substitution where
         Subs $ Map.union s1'' s2  
       where 
         -- | Apply the rightmost substitution to the leftmost.
-        s1'  = subsTVar (Subs s2) `Map.map` s1
+        s1'  = subs (Subs s2) `Map.map` s1
         -- | Remove any mapping between two identical type 
         -- variables.
         s1'' = Map.filterWithKey mirror s1'

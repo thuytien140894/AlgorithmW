@@ -3,8 +3,7 @@ module SubsSpec where
     import Substitution 
     import Syntax
     import Type
-    import TypeEnv
-    import TypeScheme
+    import TypeEnv 
 
     import Test.Hspec 
     
@@ -32,8 +31,8 @@ module SubsSpec where
                     let s1 = Subs $ Map.fromList [(1, TVar 2), (2, TVar 3)]
                     let s2 = Subs $ Map.fromList [(1, Boolean), (2, Nat), (3, TVar 2)]
                     let r  = TypeEnv $ Map.fromList [("m", Scheme (TVar 2)), ("n", ForAll [TVar 1, TVar 2] (Scheme (Arr (TVar 2) (TVar 3))))]
-                    let res1 = subsTEnv (compose s1 s2) r 
-                    let res2 = subsTEnv s1 (subsTEnv s2 r)
+                    let res1 = subs (compose s1 s2) r 
+                    let res2 = subs s1 (subs s2 r)
                     res1 `shouldBe` res2
 
         describe "applies to type environment" $
@@ -42,4 +41,4 @@ module SubsSpec where
                     let r = TypeEnv $ Map.fromList [("m", Scheme (TVar 2)), ("n", ForAll [TVar 1, TVar 2] (Scheme (Arr (TVar 2) (TVar 3))))]
                     let s = Subs $ Map.fromList [(2, Nat), (1, Boolean), (3, Nat)]
                     let res = TypeEnv $ Map.fromList [("m", Scheme Nat), ("n", ForAll [TVar 1, TVar 2] (Scheme (Arr (TVar 2) Nat)))]
-                    subsTEnv s r `shouldBe` res
+                    subs s r `shouldBe` res

@@ -49,18 +49,18 @@ module Lexer where
     dot :: Parser String
     dot = Tok.dot lexer
 
-    -- | Parse a reserved name
+    -- | Parse a reserved name.
     reserved :: String -> Parser ()
     reserved = Tok.reserved lexer
 
-    -- | Parse an operator
+    -- | Parse an operator.
     reservedOp :: String -> Parser ()
     reservedOp = Tok.reservedOp lexer
 
-    -- | Parse an identifier
+    -- | Parse an identifier.
     identifier :: Parser String
     identifier = Tok.identifier lexer 
 
-    -- | Parse a white space
+    -- | Parse a white space.
     whiteSpace :: Parser ()
     whiteSpace = Tok.whiteSpace lexer

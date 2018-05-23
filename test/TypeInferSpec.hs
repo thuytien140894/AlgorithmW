@@ -7,9 +7,6 @@ module TypeInferSpec where
     import Type
     import TypeEnv
     import TypeInferer
-    import TypeScheme
-
-    import qualified TypeEnv
 
     import Test.Hspec
 

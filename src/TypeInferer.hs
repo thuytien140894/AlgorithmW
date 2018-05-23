@@ -2,15 +2,14 @@ module TypeInferer where
 
     import Error
     import GlobalState (GlobalState) 
-    import Substitution (Substitution)
+    import Substitution (Substitution, subs)
     import Syntax
     import Type
-    import TypeEnv (TypeEnv)
-    import TypeScheme
+    import TypeEnv (TypeEnv(TypeEnv))
 
     import qualified GlobalState as GlobalS
     import qualified Substitution as Subs
-    import qualified TypeEnv 
+    import qualified TypeEnv  
 
     import Control.Monad.Except (throwError)
     import Data.List ((\\))
@@ -22,7 +21,7 @@ module TypeInferer where
                      then Scheme t 
                      else ForAll xs (Scheme t) 
       where 
-        xs = Type.freeVars t \\ TypeEnv.freeVars r
+        xs = freeVars t \\ freeVars r
 
     -- | Instantiate a type scheme by 
     -- replacing all the quantified type variables 
@@ -31,7 +30,7 @@ module TypeInferer where
     instantiate (Scheme t) = return t
     instantiate (ForAll xs c) = do 
         s <- Subs.new xs Subs.empty
-        let c' = Subs.subsTScheme s c
+        let c' = subs s c
         instantiate c' 
 
     -- | Return a substitution that unifies two types.
@@ -45,7 +44,7 @@ module TypeInferer where
         | occurCheck x t1         = throwError $ Occur x t1
         | otherwise               = return $ Subs.insert Subs.empty x t1
     unify (Arr s1 t1) (Arr s2 t2) = do s'  <- unify s1 s2 
-                                       s'' <- unify (Subs.subsTVar s' t1) (Subs.subsTVar s' t2)
+                                       s'' <- unify (subs s' t1) (subs s' t2)
                                        return $ Subs.compose s'' s'
     unify t1 t2                   = throwError $ Mismatch t1 t2
 
@@ -64,7 +63,7 @@ module TypeInferer where
         t <- GlobalS.newTVar
         s2 <- unify (Arr Nat retTy) (Arr t1 t)
         let s = Subs.compose s2 s1 
-        return (s, Subs.subsTVar s2 t)
+        return (s, subs s2 t)
 
     -- | Infer the type for an expression given a typing environment. 
     -- Also derive a substitution to be used for next type inference.
@@ -84,13 +83,13 @@ module TypeInferer where
         If e1 e2 e3 -> do (s1, t1) <- typeInfer' r e1
                           s1' <- unify Boolean t1
                           let s1'' = Subs.compose s1 s1'
-                          let r1 = Subs.subsTEnv s1'' r
+                          let r1 = subs s1'' r
                           (s2, t2) <- typeInfer' r1 e2
-                          let r2 = Subs.subsTEnv s2 r1 
+                          let r2 = subs s2 r1 
                           (s3, t3) <- typeInfer' r2 e3
                           s4 <- unify t2 t3
                           let s' = Subs.composeList [s4, s3, s2, s1'']  
-                          return (s', Subs.subsTVar s4 t2)
+                          return (s', subs s4 t2)
 
         -- | Variable
         Var x       -> do c <- TypeEnv.lookUp r x
@@ -101,22 +100,22 @@ module TypeInferer where
         Lambda x e' -> do t <- GlobalS.newTVar
                           let r' = TypeEnv.insert r x $ Scheme t
                           (s', t') <- typeInfer' r' e'
-                          return (s', Subs.subsTVar s' t `Arr` t') 
+                          return (s', subs s' t `Arr` t') 
 
         -- | Application
         App e1 e2   -> do (s1, t1) <- typeInfer' r e1
-                          let r' = Subs.subsTEnv s1 r
+                          let r' = subs s1 r
                           (s2, t2) <- typeInfer' r' e2
                           t <- GlobalS.newTVar
-                          s3 <- unify (Subs.subsTVar s2 t1) (Arr t2 t)
+                          s3 <- subs s2 t1 `unify` Arr t2 t
                           let s = Subs.composeList [s3, s2, s1]
-                          return (s, Subs.subsTVar s3 t)
+                          return (s, subs s3 t)
 
         -- | Let expressions
         Let x e1 e2 -> do (s1, t1) <- typeInfer' r e1
-                          let r1 = Subs.subsTEnv s1 r 
+                          let r1 = subs s1 r 
                           let r2 = TypeEnv.insert r x $ generalize r1 t1
-                          let r3 = Subs.subsTEnv s1 r2 
+                          let r3 = subs s1 r2 
                           (s2, t2) <- typeInfer' r3 e2
                           let s = Subs.compose s2 s1
                           return (s, t2)
