@@ -1,6 +1,8 @@
 module Main where
 
     import Parser
+    import Prettier
+    import TypeInferer
     
     import Control.Monad.Trans
     import System.Console.Haskeline
@@ -8,8 +10,14 @@ module Main where
     -- | Infer a type for an input, either printing out the result or error
     interpret :: String -> IO ()
     interpret line = case parseExpr line of 
-        Right validExpr -> print validExpr
+        Right validExpr -> case typeInfer validExpr of 
+                               Right t  -> printPretty t 
+                               Left err -> printPretty err
         Left err        -> print err                       
+
+    -- | Print new line.
+    newLine :: InputT IO ()
+    newLine = lift $ putStr "\n"
 
     -- | Run test on a string input
     test :: String -> IO ()
@@ -30,7 +38,7 @@ module Main where
         case input of
             Just "exit"  -> return ()
             Just "test"  -> lift runTests >> loop
-            Just validIn -> lift (interpret validIn) >> loop
+            Just validIn -> lift (interpret validIn) >> newLine >> loop
                             
     -- | Main method for the type inferer
     main :: IO ()
