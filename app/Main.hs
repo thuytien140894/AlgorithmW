@@ -29,7 +29,28 @@ module Main where
 
     -- | Run all the test cases 
     runTests :: IO ()
-    runTests = return ()
+    runTests = do 
+        test "succ (pred 0)"
+        test "true"
+        test "\\x. 0"
+        test "(\\x. x) succ 0"
+        test "(\\x. if iszero x then 0 else succ 0) 0"
+        test "if true then true else 0"
+        test "(\\m. (\\x. if x then m 0 else m (succ 0))))"
+        test "((\\m. (\\x. if true then x else m x)) (\\x. x)) 0"
+        test "(\\x. x 0) (\\x. succ x)"
+        test "(\\x. x true) (\\x. succ x)"
+        test "(\\x. x) (\\x. 0)"
+        test "(\\m. (\\x. x 0) m) (\\x. x)"
+        test "(\\m. (\\x. x) m) (\\x. x)"
+        test "(\\m. (\\x. x m) (\\x. x)) 0"
+        test "(\\n. (\\m. (\\x. x) m) n) (\\x. x)"
+        test "(\\n. (\\m. (\\x. n (m 0)))))"
+        test "let m = \\x. x in m m"
+        test "let m = (\\x. let y = x in y) in m m"
+        test "let m = (\\x. let y = x in y) in (m m) succ 0"
+        test "\\x. x x"
+        test "\\m. let y = m in let x = y true in x"
 
     -- | Run a read-eval-print loop
     loop :: InputT IO ()
