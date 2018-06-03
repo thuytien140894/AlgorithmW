@@ -52,6 +52,14 @@ module Main where
         test "\\x. x x"
         test "\\m. let y = m in let x = y true in x"
 
+    -- | Display the prompt options.
+    displayMenu :: IO ()
+    displayMenu = do 
+        putStrLn "  Commands available from the prompt:"
+        putStrLn "      test: run test cases for the GTLC"
+        putStrLn "      exit: exit the program"
+        putStrLn "      help: display this menu"
+
     -- | Run a read-eval-print loop
     loop :: InputT IO ()
     loop = do
@@ -59,10 +67,12 @@ module Main where
         case input of
             Just "exit"  -> return ()
             Just "test"  -> lift runTests >> loop
+            Just "help"  -> lift displayMenu >> loop
             Just validIn -> lift (interpret validIn) >> newLine >> loop
                             
     -- | Main method for the type inferer
     main :: IO ()
     main = do 
         putStrLn "Hindley-Milner Type Inferer, verion 1.0.0: https://github.com/thuytien140894/AlgorithmW"
+        putStrLn "Type \"help\" for more information."
         runInputT defaultSettings loop
