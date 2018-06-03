@@ -1,5 +1,6 @@
 module Prettier 
-    ( printPretty
+    ( printMsg
+    , printRes
     ) where 
 
     import Error
@@ -22,8 +23,13 @@ module Prettier
     class Pretty a where 
         output :: a -> Doc 
 
-        printPretty :: a -> IO ()
-        printPretty = PP.putDoc . output 
+        -- | Print error message
+        printMsg :: a -> IO ()
+        printMsg = PP.putDoc . output 
+
+        -- | Print an inferred type in green.
+        printRes :: a -> IO ()
+        printRes = PP.putDoc . PP.green . output
 
     -- | Print pretty for expressions.
     instance Pretty Expr where 
@@ -43,9 +49,9 @@ module Prettier
             Lambda x e' -> PP.backslash <> PP.text x <> PP.dot 
                            <+> output e'
             App e1 e2   -> case e1 of 
-                               Lambda {} -> PP.parens (output e1) <+> sndTerm
-                               App _ _   -> PP.parens (output e1) <+> sndTerm
-                               _         -> output e1 <+> sndTerm
+                               Lambda{} -> PP.parens (output e1) <+> sndTerm
+                               App _ _  -> PP.parens (output e1) <+> sndTerm
+                               _        -> output e1 <+> sndTerm
                              where 
                                sndTerm = case e2 of 
                                    Lambda{} -> PP.parens $ output e2
@@ -58,7 +64,7 @@ module Prettier
             TVar x  -> PP.char $ getVar x
             Boolean -> PP.text "Bool"
             Nat     -> PP.text "Nat"
-            Arr s t -> output s <+> PP.text "->" <+> output t
+            Arr s t -> PP.parens $ output s <+> PP.text "->" <+> output t
 
     -- | Print pretty for type inference errors.
     instance Pretty Error where

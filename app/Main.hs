@@ -11,8 +11,8 @@ module Main where
     interpret :: String -> IO ()
     interpret line = case parseExpr line of 
         Right validExpr -> case typeInfer validExpr of 
-                               Right t  -> printPretty t 
-                               Left err -> printPretty err
+                               Right t  -> printRes t 
+                               Left err -> printMsg err
         Left err        -> print err                       
 
     -- | Print new line.
