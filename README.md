@@ -1,4 +1,4 @@
-# AlgorithmW
+# Algorithm W
 This program implements a type inferer for the untyped lambda calculus based on 
 Hindley-Milner type inference. To run this program, make sure that Haskell and the 
 Stack build tool are installed on the system.
@@ -25,13 +25,9 @@ Stack build tool are installed on the system.
    
         stack build  
 
-   To start the GTLC interpreter, run the command:
+   To start the type inferer, run the command:
 
-<<<<<<< HEAD
         stack exec AlgorithmW-exe  
-=======
-        stack exec GTLC-exe  
->>>>>>> 3cc9b1963ab07e32b7274e5e00e99a750e4d68d2
 
 ### 3. The Language Syntax
 
