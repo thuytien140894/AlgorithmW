@@ -32,6 +32,7 @@ module Main where
     runTests = do 
         test "succ (pred 0)"
         test "true"
+        test "\\x. y"
         test "\\x. 0"
         test "(\\x. x) succ 0"
         test "(\\x. if iszero x then 0 else succ 0) 0"
