@@ -27,7 +27,11 @@ Stack build tool are installed on the system.
 
    To start the GTLC interpreter, run the command:
 
+<<<<<<< HEAD
         stack exec AlgorithmW-exe  
+=======
+        stack exec GTLC-exe  
+>>>>>>> 3cc9b1963ab07e32b7274e5e00e99a750e4d68d2
 
 ### 3. The Language Syntax
 
