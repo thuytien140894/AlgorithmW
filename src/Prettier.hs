@@ -69,10 +69,10 @@ module Prettier
     -- | Print pretty for type inference errors.
     instance Pretty Error where
         output e = renderException "Error:" <+> case e of 
-            NotBound x   -> PP.text x <+> PP.text "is out of bound."
+            NotBound x   -> PP.squotes (PP.text x) <+> PP.text "is out of bound"
             Mismatch s t -> PP.text "Type mismatch:" 
                             <+> output s 
-                            <+> PP.text "vs" 
+                            <+> PP.text "vs." 
                             <+> output t
             Occur x t    -> PP.text "Type variable" <+> PP.squotes (PP.char $ getVar x) 
                             <+> PP.text "occurs in" <+> PP.squotes (output t)
