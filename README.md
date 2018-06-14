@@ -58,6 +58,10 @@ Stack build tool are installed on the system.
    Conditionals:
    
         if e1 then e2 else e3
+
+   Let-expressions:
+   
+        let x = e1 in e2
         
 ### 4. How to exit the program
 
