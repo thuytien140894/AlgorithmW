@@ -1,0 +1,38 @@
+We extend the untyped $\lambda$-calculus with \texttt{let}-expressions, 
+arithmetic and boolean operators (\texttt{succ}, \texttt{pred}, \texttt{iszero}), 
+and conditional expressions.
+\begin{alignat*}{3}
+    &(\textit{expressions}) \qquad 
+    & e ::= \: & x \; | \;  
+          e \: e \; | \;
+          \lambda x. \: e \; | \;
+          k \; | \; \\
+    &&    & \texttt{succ} \: e \; | \;
+          \texttt{pred} \: e \; | \;
+          \texttt{iszero} \: e \; | \; \\
+    &&    & \texttt{if} \: e \: \texttt{then} \: e \: \texttt{else} \: e \; | \; \\
+    &&    & \texttt{let} \: x = e \: \texttt{in} \: e  \\
+    &(\textit{constants}) 
+    & k ::= \: & n \; | \; \texttt{true} \; | \; \texttt{false} \\
+    &(\textit{numbers}) 
+    & n ::= \: & 0 \; | \; \texttt{succ} \: n 
+\end{alignat*}
+Note that a $\lambda$-abstraction ($\lambda x. \: e$) does not have any type annotation 
+for the parameter $x$. As a result, the type syntax also consists of type variables 
+$\alpha$ to describe expressions with unspecified types. Additionally, the Hindley-Milter 
+type system uses the notion of a \emph{type scheme} $\sigma$ to emphasize the 
+universality of type variables.
+\begin{alignat*}{3}
+    &(\textit{types}) \hspace{2cm}
+    & \tau ::= \: & \alpha \; | \;  
+          i \; | \;
+          \tau \rightarrow \tau \\
+    &(\textit{base types}) 
+    & i ::= \: & \texttt{Nat} \; | \; \texttt{Bool} \\
+    &(\textit{type schemes}) 
+    & \sigma ::= \: & \tau \; | \; \forall \overrightarrow{\alpha}. \: \sigma 
+\end{alignat*}
+The base types include \texttt{Bool} and \texttt{Nat}. Constants like \texttt{true} 
+and \texttt{false} are of type \texttt{Bool}, whereas all the numeric values have 
+type \texttt{Nat}. A type scheme $\forall \overrightarrow{\alpha}. \: \sigma$ is said 
+to have generic type variables $\overrightarrow{\alpha} = \alpha _1,...,\alpha _n$.

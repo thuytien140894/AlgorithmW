@@ -1,0 +1,264 @@
+Our type inference program for the $\lambda$-calculus imitates 
+the following structure.
+\begin{gather*}
+    \texttt{standard I/O} \xrightarrow{\text{chars}}
+    \texttt{lexing} \xrightarrow{\text{tokens}} \texttt{parsing} \\
+    \lhook\joinrel\xrightarrow{\text{terms}} \texttt{type-inferring} 
+    \xrightarrow{\text{type}/\text{error}} \texttt{pretty-printing}
+\end{gather*}
+where a program as a sequence of characters is first read from the 
+standard input, tokenized by a lexical analyzer, and parsed into 
+an abstract syntax tree. The program then infers the type for  
+the expression. The final 
+result is then printed to the standard output in a readable format. 
+This section mainly focuses on the implementation of the type 
+inference component. 
+The details on the lexer, parser, and pretty-printer can be consulted 
+in Appendix A, B, and C.
+
+First, we represent the abstract syntax for the language defined in Section 2 
+with data types for expressions, types, and type schemes.  
+\begin{lstlisting}
+    data Expr = Tru                   
+               | Fls                   
+               | Zero                  
+               | Var String            
+               | If Expr Expr Expr     
+               | Succ Expr             
+               | Pred Expr             
+               | IsZero Expr           
+               | Let String Expr Expr  
+               | Lambda String Expr    
+               | App Expr Expr 
+               
+    data Type = TVar Int       
+               | Boolean        
+               | Nat            
+               | Arr Type Type 
+    
+    type TVar = Type
+
+    data TypeScheme = ForAll [TVar] TypeScheme
+                      | Scheme Type
+\end{lstlisting}
+The type synonym \lstinline{TVar} for \lstinline{Type} is used in  
+the construction of a quantified type scheme to indicate that only 
+type variables are supposed to be quantified. 
+
+\subsection{Unification}
+The Hindley-Milner type inference algorithm relies on the unification 
+subroutine to compute a substitution that equates two types. The 
+data type for a substitution is defined as a mapping of type variables 
+to types.
+\begin{lstlisting}
+    data Substitution = Subs (Map Int Type)
+\end{lstlisting}
+Here, we represent a type variable simply as an integer. We also define 
+a typeclass \lstinline{Substitutable} to apply a substitution to types, 
+type schemes, and type environments. 
+\begin{lstlisting}
+    instance Substitutable Type where
+        subs s (TVar x)    = case lookUp s x of 
+            Just t  -> subs s t 
+            Nothing -> TVar x
+        subs s (Arr t1 t2) = subs s t1 `Arr` subs s t2
+        subs s t           = t
+
+    instance Substitutable TypeScheme where 
+        subs s (Scheme t)    = Scheme $ subs s t
+        subs s (ForAll xs c) = ForAll xs c'
+          where 
+            c' = removeBoundVars s xs `subs` c
+
+    instance Substitutable TypeEnv where 
+        subs s (TypeEnv r) = TypeEnv $ subs s `Map.map` r
+\end{lstlisting}
+When applying a substitution to a type variable results in another 
+type variable, we keep repeating the substitution process until the result 
+is either a precise type or a type variable that is not mapped to anything else. 
+Also, applying a substitution to a 
+type scheme, $S\sigma$, only affects free type variables. Therefore, 
+we need to remove all the quantified type variables in $\sigma$ from $S$ 
+before performing substitution.
+
+Given multiple substitutions, we need to be able to compose them into one. 
+\begin{lstlisting}
+    compose :: Substitution -> Substitution -> Substitution
+    compose s1 (Subs s2) 
+        | Map.null s2 = s1
+    compose (Subs s1) s2 
+        | Map.null s1 = s2
+    compose (Subs s1) (Subs s2) = 
+        Subs $ Map.union s1'' s2  
+      where 
+        s1'  = subs (Subs s2) `Map.map` s1
+        s1'' = Map.filterWithKey mirror s1'
+        mirror k a = case a of 
+            TVar x 
+                | k == x -> False
+            _             -> True 
+\end{lstlisting}
+The composition of two substitutions $S_1$ and $S_2$ is obtained by 
+first applying $S_2$ to every type value in $S_1$ and removing any mappings between two 
+identical type variables. Then we take the left-biased union of the new $S_1$ 
+and $S_2$ to remove duplicate keys in $S_1$ from $S_2$. If either substitution 
+is empty, then we return the non-empty one as the composition. 
+
+Given the definition of a substitution, the unification algorithm is as follows.
+\begin{lstlisting}
+    unify :: Type -> Type -> GlobalState Substitution
+    unify t1 t2 
+        | t1 == t2                = return Subs.empty
+    unify (TVar x) t2
+        | occurCheck x t2         = throwError $ Occur x t2
+        | otherwise               = return $ Subs.insert Subs.empty x t2
+    unify t1 (TVar x) 
+        | occurCheck x t1         = throwError $ Occur x t1
+        | otherwise               = return $ Subs.insert Subs.empty x t1
+    unify (Arr s1 t1) (Arr s2 t2) = do s'  <- unify s1 s2 
+                                       s'' <- unify (subs s' t1) (subs s' t2)
+                                       return $ Subs.compose s'' s'
+    unify t1 t2                   = throwError $ Mismatch t1 t2
+\end{lstlisting}
+There are four cases when unifying two types: 
+\begin{enumerate}
+    \item An empty substitution is returned for two equivalent types.
+    \item A singleton substitution mapping a type variable $\alpha$ 
+    to another type $T$ is returned only if $\alpha$ does not occur in $T$. For instance, 
+    substitution $[a/(a \rightarrow \texttt{Nat})]$ applied to $a$ gives 
+    $a \rightarrow \texttt{Nat}$ but yields $(a \rightarrow \texttt{Nat}) \rightarrow \texttt{Nat}$ 
+    when applied to $a \rightarrow \texttt{Nat}$. Hence, this substitution 
+    is invalid.
+    \item  Unifying two function types involves composing the two substitutions 
+    resulted from unifying the argument types and the return types.
+    \item An error is returned when unifying two inconsistent types. 
+\end{enumerate} 
+
+The unification algorithm plays an important role in type inference for 
+either finding substitutions used to specify the final type, or reporting a type 
+error.
+
+\subsection{Algorithm W}
+Given a type environment $\Gamma$ and an expression $e$, algorithm W 
+returns both a substitution $S$ and a type $\tau$ such that 
+\begin{align*}
+    S\Gamma \vdash e : \tau
+\end{align*}
+The return result $(S, \tau)$ is wrapped inside the \lstinline{GlobalState} 
+monad, which is defined as 
+\begin{lstlisting}
+    type GlobalState a = ExceptT Error (State Int) a
+\end{lstlisting}
+The combination of the \lstinline{State} and \lstinline{Except} monads
+allows us to maintain a global counter for generating fresh type variable name 
+as well as to return errors during type inference.
+
+Algorithm W is implemented as follows.
+\begin{lstlisting}
+    typeInfer' :: TypeEnv -> Expr -> GlobalState (Substitution, Type)
+    typeInfer' r e = case e of 
+        -- | Constants
+        Tru         -> return (Subs.empty, Boolean)
+        Fls         -> return (Subs.empty, Boolean)
+        Zero        -> return (Subs.empty, Nat)
+        -- | Arithmetic
+        Succ e'     -> typeInferArith r e' Nat
+        Pred e'     -> typeInferArith r e' Nat
+        IsZero e'   -> typeInferArith r e' Boolean
+        -- | Conditional
+        If e1 e2 e3 -> do (s1, t1) <- typeInfer' r e1
+                          s1' <- unify Boolean t1
+                          let s1'' = Subs.compose s1 s1'
+                          let r1 = subs s1'' r
+                          (s2, t2) <- typeInfer' r1 e2
+                          let r2 = subs s2 r1 
+                          (s3, t3) <- typeInfer' r2 e3
+                          s4 <- unify t2 t3
+                          let s' = Subs.composeList [s4, s3, s2, s1'']  
+                          return (s', subs s4 t2)
+        -- | Variable
+        Var x       -> do c <- TypeEnv.lookUp r x
+                          t <- instantiate c
+                          return (Subs.empty, t)
+        -- | Abstraction
+        Lambda x e' -> do t <- GlobalS.newTVar
+                          let r' = TypeEnv.insert r x $ Scheme t
+                          (s', t') <- typeInfer' r' e'
+                          return (s', subs s' t `Arr` t') 
+        -- | Application
+        App e1 e2   -> do (s1, t1) <- typeInfer' r e1
+                          let r' = subs s1 r
+                          (s2, t2) <- typeInfer' r' e2
+                          t <- GlobalS.newTVar
+                          s3 <- subs s2 t1 `unify` Arr t2 t
+                          let s = Subs.composeList [s3, s2, s1]
+                          return (s, subs s3 t)
+        -- | Let expressions
+        Let x e1 e2 -> do (s1, t1) <- typeInfer' r e1
+                          let r1 = subs s1 r 
+                          let r2 = TypeEnv.insert r x $ generalize r1 t1
+                          let r3 = subs s1 r2 
+                          (s2, t2) <- typeInfer' r3 e2
+                          let s = Subs.compose s2 s1
+                          return (s, t2)
+\end{lstlisting}
+In the case of a constant, we simply return one of the base types. 
+Arithmetic and boolean operators as constant functions only differ in their 
+output type. We create a subroutine \lstinline{typeInferArith} to handle 
+different output types. 
+\begin{lstlisting}
+    typeInferArith :: TypeEnv -> Expr -> Type -> GlobalState (Substitution, Type)
+    typeInferArith r e retTy = do 
+        (s1, t1) <- typeInfer' r e
+        t <- GlobalS.newTVar
+        s2 <- unify (Arr Nat retTy) (Arr t1 t)
+        let s = Subs.compose s2 s1 
+        return (s, subs s2 t)
+\end{lstlisting}
+The type $t_1$ of the input expression is first inferred. Then we unify 
+the type of the operator with type $t_1 \rightarrow \beta$, where $\beta$ 
+is a new type variable generated using the subroutine \lstinline{GlobalS.newTVar}. 
+The resulting substitution is applied to $\beta$ for the final type.
+
+In the case of a conditional expression, we first compute the type for the condition 
+and check if it is of type \texttt{Bool} through unification. Then we unify 
+the inferred types for the two branches to ensure their equivalence. 
+Note that every computed substitution is immediately applied to the type 
+environment to instantiate all the type schemes containing variables. The final 
+type of a conditional expression is the result of applying the last substitution 
+to one of the branch types. The composition of all the substitutions 
+computed during the process is then returned. 
+
+Type inference for a variable $x$ is simply the application of rule {\scriptsize{[TAUT]}} 
+to find the type scheme $\sigma$ for $x$ in $\Gamma$, and rule {\scriptsize{[INST]}} 
+to instantiate $\sigma$ with new type variables. 
+
+In the case of a $\lambda$-abstraction, we generate a new type variable $\beta$ 
+as the type for the bound variable $x$. The type for the body 
+expression is inferred under the assumption that $x$ has type $\beta$ 
+to yield the return type for the $\lambda$-abstraction. 
+Applying the resulting substitution to $\beta$ gives the input type for 
+the $\lambda$-abstraction.
+
+To infer the type of an application, the algorithm first infers the types for the 
+operator $e_1$ and the argument $e_2$. A new type variable $\beta$ is used as the return type 
+for an operator that takes in the computed argument type. Both the original 
+and new function types are unified to produce a substitution for $\beta$ as 
+the final type. All the substitutions are composed and returned.
+
+Finally, in the case of a \texttt{let}-expression ($\texttt{let} \: x = e_1 \: \texttt{in} \: e_2$), 
+the type $t_1$ of $e_1$ along with the substitution $S_1$ used for the inference are computed. 
+The resulting type is generalized with respect to the type environment $\Gamma$ after 
+the application of $S_1$. The type of a \texttt{let}-expression is just the type inferred 
+for $e_2$, where all the $x$ occurrences assume the generalized type scheme.
+
+At the top level, we apply algorithm W to an input expression with an  
+empty type environment and an initial type variable name of 0. The \lstinline{GlobalState} 
+result is lifted to expose the inner \lstinline{Either} value that 
+represents either a type error or the most general type for the expression.
+\begin{lstlisting}
+    typeInfer :: Expr -> Either Error Type
+    typeInfer e = case GlobalS.runTyInfer $ typeInfer' TypeEnv.empty e of 
+        Right (s, t) -> Right t 
+        Left err     -> Left err 
+\end{lstlisting}

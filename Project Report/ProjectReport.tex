@@ -1,0 +1,87 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+\usepackage{bussproofs}
+\usepackage{caption}
+\usepackage[margin=4cm]{geometry}
+\usepackage[hyphens]{url}
+\usepackage{listings}
+\usepackage{titling}
+\usepackage{xcolor}
+
+% Code listings
+\lstset{basicstyle=\small\sffamily,
+        breaklines=true,
+        language=Haskell,
+        columns=flexible,
+        keepspaces=true,
+        tabsize=4,
+        commentstyle=\color{gray},
+        morekeywords={throwError},
+        literate= {<-}{$\leftarrow$}{1}{->}{$\rightarrow$}{1},
+        deletekeywords={fst,snd,zero}
+      }
+
+% inline proof trees
+\newenvironment{bprooftree}
+    {\leavevmode\hbox\bgroup}
+    {\DisplayProof\egroup}
+
+% Figure titles
+\captionsetup{labelfont=bf,font=bf,skip=0pt}
+
+\title{\bf Implementation of Hindley-Milner \\ Type Inference}
+\author{Tien Thuy Ho}
+\predate{}
+\postdate{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Hindley-Milner type inference system is known for inferring the most general type of a program 
+without the use of type annotations. This paper details an implementation of Hindley-Milner type inference 
+using the linear-time algorithm W.
+\end{abstract}
+
+\section{Introduction} \input{Introduction}
+\section{The $\lambda$-Calculus} \input{Language}
+\section{Hindley-Milner Type Inference} \input{TypeInference}
+\section{Implementation} \input{Implementation}
+\section{Conclusion} \input{Conclusion}
+
+\appendix
+\input{Appendix}
+
+\begin{thebibliography}{9}
+    \bibitem{damas} 
+    L. Damas and R. Milner. 
+    Principle types-schemes for functional programs. 
+    In \textit{POPL ’82: Proceedings of the 9th ACM SIGPLAN-SIGACT symposium on Principles of programming languages}, 
+    pages 207-212, 1982.
+
+    \bibitem{grant} 
+    I. Grant.
+    The Hindley-Milner Type Inference Algorithm.
+    January 2011.
+
+    \bibitem{heeran} 
+    B. Heeran, J. Hage, and D. Swierstra.
+    Generalizing Hindley-Milner Type Inference Algorithms.
+    July 2002.
+
+    \bibitem{hutton} 
+    Graham Hutton. 
+    \textit{Programming in Haskell}. 
+    University Press, Cambridge, 2007.
+
+    \bibitem{pierce} 
+    Benjamin C. Pierce. 
+    \textit{Types and Programming Languages}. 
+    The MIT Press, Cambridge, 2002.
+
+    \bibitem{source} 
+    Source code, \\
+    \url{https://github.com/thuytien140894/AlgorithmW}
+\end{thebibliography}
+\end{document}

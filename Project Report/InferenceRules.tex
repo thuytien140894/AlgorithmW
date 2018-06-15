@@ -1,0 +1,84 @@
+\begin{figure}[ht]
+    \caption{$\lambda ^? _{\rightarrow}$ Type Inference Rules}
+    \hrule
+    \[
+        \begin{bprooftree}
+            \AxiomC{$(x\!:\!\sigma) \in \Gamma$}
+            \RightLabel{\scriptsize{\text{[TAUT]}}}
+            \UnaryInfC{$\Gamma \vdash x : \sigma$}
+        \end{bprooftree}
+        \begin{bprooftree}
+            \AxiomC{$\Delta k = \tau$}
+            \RightLabel{\scriptsize{\text{[CONST]}}}
+            \UnaryInfC{$\Gamma \vdash k : \tau$}
+        \end{bprooftree}
+        \begin{bprooftree}
+            \AxiomC{$\Gamma \vdash e : \sigma$}
+            \AxiomC{$\sigma > \sigma'$}
+            \RightLabel{\scriptsize{\text{[INST]}}}
+            \BinaryInfC{$\Gamma \vdash e : \sigma'$}
+    \end{bprooftree}
+    \]
+    \vspace{1mm}
+    \[
+        \begin{bprooftree}
+                \AxiomC{$\Gamma \vdash e : \sigma$}
+                \AxiomC{$\overrightarrow{\alpha} \not \in dom(\Gamma)$}
+                \RightLabel{\scriptsize{\text{[GEN]}}}
+                \BinaryInfC{$\Gamma \vdash e : \forall \overrightarrow{\alpha}. \: \sigma$}
+        \end{bprooftree}
+        \begin{bprooftree}
+            \AxiomC{$\Gamma \vdash e : \texttt{Nat}$}
+            \RightLabel{\scriptsize{\text{[SUCC]}}}
+            \UnaryInfC{$\Gamma \vdash \texttt{succ} \: e : \texttt{Nat}$}
+        \end{bprooftree}
+    \]
+    \vspace{1mm}
+    \[
+        \begin{bprooftree}
+            \AxiomC{$\Gamma \vdash e : \texttt{Nat}$}
+            \RightLabel{\scriptsize{\text{[PRED]}}}
+            \UnaryInfC{$\Gamma \vdash \texttt{pred} \: e : \texttt{Nat}$}
+        \end{bprooftree}
+        \begin{bprooftree}
+            \AxiomC{$\Gamma \vdash e : \texttt{Nat}$}
+            \RightLabel{\scriptsize{\text{[ISZERO]}}}
+            \UnaryInfC{$\Gamma \vdash \texttt{iszero} \: e : \texttt{Bool}$}
+        \end{bprooftree}
+    \]
+    \vspace{1mm}
+    \[
+        \begin{bprooftree}
+                \AxiomC{$\Gamma \vdash e_1 : \texttt{Bool}$}
+                \AxiomC{$\Gamma \vdash e_2 : \tau$}
+                \AxiomC{$\Gamma \vdash e_3 : \tau$}
+                \RightLabel{\scriptsize{\text{[IF]}}}
+                \TrinaryInfC{$\Gamma \vdash \texttt{if} \: e_1 \: \texttt{then} \: e_2 \: 
+                \texttt{else} \: e_3 : \: \tau$}
+        \end{bprooftree}
+    \]
+    \vspace{1mm}
+    \[
+        \begin{bprooftree}
+            \AxiomC{$\Gamma \vdash e_1 : \tau' \rightarrow \tau$}
+            \AxiomC{$\Gamma \vdash e_2 : \tau'$}
+            \RightLabel{\scriptsize{\text{[COMB]}}}
+            \BinaryInfC{$\Gamma \vdash e_1 \: e_2 : \tau$}
+        \end{bprooftree}
+        \begin{bprooftree}
+            \AxiomC{$\Gamma _x \cup \{x\!:\!\tau'\} \vdash e : \tau$}
+            \RightLabel{\scriptsize{\text{[ABS]}}}
+            \UnaryInfC{$\Gamma \vdash \lambda x. \: e : \tau' \rightarrow \tau$}
+        \end{bprooftree}
+    \]
+    \vspace{1mm}
+    \[
+        \begin{bprooftree}
+            \AxiomC{$\Gamma \vdash e : \sigma$}
+            \AxiomC{$\Gamma _x \cup \{x\!:\!\sigma\} \vdash e' : \tau$}
+            \RightLabel{\scriptsize{\text{[LET]}}}
+            \BinaryInfC{$\Gamma \vdash (\texttt{let} \: x = e \: \texttt{in} \: e') : \tau$}
+        \end{bprooftree}
+    \]
+    \hrule
+    \end{figure}  

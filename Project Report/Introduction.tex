@@ -1,0 +1,16 @@
+Type systems are fundamental to the study and development of programming languages. 
+With the presence of explicit type annotations in a given program, a type system can deduce 
+the final type or detect errors using a series of type rules applicable to each construct 
+of a language. On the other hand, types can be inferred, without the need of any annotations, through constraints 
+on the type domain of an expression based on its primitive value or its semantics. For instance, 
+an integer is automatically assigned to type \texttt{Int}, whereas an argument to a function of type 
+$\texttt{Int} \rightarrow \texttt{Bool}$ must have type $\texttt{Int}$.
+
+Hindley-Milner type inference supports parametric polymorphism in the $\lambda$-calculus. There are no type 
+annotations, and an operation can accept all types of values. Besides type constants, the Hindley-Milner 
+system uses type variables to represent all possible type instantiations for an untyped operation. 
+In this paper, we present an implementation of the Hindley-Milner type inference system using the 
+linear-time algorithm W. The organization of the paper is as follows. First, we review the language syntax. 
+We then outline some background literature on Hindley-Milner type inference. Finally, 
+we describe the implementation details of type inference in our language. The last section 
+concludes our work.

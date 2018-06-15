@@ -1,0 +1,121 @@
+\section{Lexer}
+The library \texttt{Parsec} is used to implement the lexer and parser. 
+We first create a language definition specifying how individual characters are tokenized, as follows:
+\begin{lstlisting}
+    langDef :: Tok.LanguageDef ()
+    langDef = Tok.LanguageDef
+        { Tok.commentStart    = ""  
+        , Tok.commentEnd      = ""
+        , Tok.commentLine     = "//"
+        , Tok.nestedComments  = False
+        , Tok.identStart      = letter 
+        , Tok.identLetter     = alphaNum 
+        , Tok.opStart         = oneOf ":!#$%&*+./<=>?@\\^|-~"
+        , Tok.opLetter        = oneOf ":!#$%&*+./<=>?@\\^|-~"
+        , Tok.reservedNames   = [ "true"
+                                , "false"
+                                , "if"
+                                , "then"
+                                , "else"
+                                , "succ"
+                                , "pred"
+                                , "iszero"
+                                , "zero"
+                                ]
+        , Tok.reservedOpNames = [ "succ"
+                                  , "pred"
+                                  , "iszero" 
+                                  ]
+        , Tok.caseSensitive   = True
+        }
+\end{lstlisting}
+and then initialize a lexer using this language definition.
+\begin{lstlisting}
+    lexer :: Tok.TokenParser ()
+    lexer = Tok.makeTokenParser langDef
+\end{lstlisting}
+
+\section{Parser}
+The parser uses the tokens provided by the lexer to construct a valid abstract 
+syntax tree for the input program. We first define separate parsers for each expression type. Parsing constants 
+and variables is straightforward. 
+\begin{lstlisting}
+    -- | Parse a variable.
+    var :: Parser Expr
+    var = Var <$> identifier 
+
+    -- | Parse constants.
+    true, false, zero :: Parser Term
+    true  = reserved "true" >> return Tru
+    false = reserved "false" >> return Fls
+    zero  = reserved "0" >> return Zero
+\end{lstlisting}
+We parse arithmetic and boolean operators as unary prefix operators.
+\begin{lstlisting}
+    prefixTable :: Ex.OperatorTable String () Identity Term
+    prefixTable = 
+        [ [ Ex.Prefix $ reserved "succ"   >> return Succ
+          , Ex.Prefix $ reserved "pred"   >> return Pred
+          , Ex.Prefix $ reserved "iszero" >> return IsZero
+          ]
+        ]
+\end{lstlisting}
+The following are the parsers for conditionals, $\lambda$-abstractions, and \texttt{let}-expressions.
+\begin{lstlisting}
+    -- | Parse an if statement.
+    conditional :: Parser Expr
+    conditional = do
+        reserved "if"
+        cond <- expr
+        reserved "then"
+        tr <- expr
+        reserved "else"
+        fl <- expr
+        return $ If cond tr fl
+
+    -- | Parse an abstraction.
+    lambda :: Parser Expr
+    lambda = do
+        reservedOp "\\" 
+        x <- identifier 
+        dot 
+        body <- expr
+        return $ Lambda x body
+
+    -- | Parse a let expression.
+    letExpr :: Parser Expr 
+    letExpr = do 
+        reserved "let"
+        x <- identifier
+        reservedOp "=" 
+        val <- expr
+        reserved "in"
+        body <- expr
+        return $ Let x val body
+\end{lstlisting}
+
+At the top level, the parser parses an expression as an application by first parsing one or 
+more simple expressions (non-applications) separated by a space and then applying them from left to right.
+\begin{lstlisting}
+    app :: Parser Term
+    app = do
+        terms <- sepBy1 expr' whiteSpace 
+        return $ applyFromLeft terms
+\end{lstlisting}
+
+\section{Pretty Printer}
+The library \texttt{PrettyPrint} is used to implement a printer, which converts expressions from their AST representations to 
+user-readable formats. We create separate printers for expressions, types, and errors using  
+the typeclass \lstinline{Pretty}. 
+\begin{lstlisting}
+    class Pretty a where 
+        output :: a -> Doc
+        
+        printMsg :: a -> IO ()
+        printMsg = PP.putDoc . output
+\end{lstlisting}
+The \lstinline{output} function converts a type $a$ to a 
+\texttt{Doc}, which is a set of layouts. This function is left as abstract because each \texttt{Pretty} instance  
+requires different formatting styles. \texttt{printMsg} has a default implementation of 
+piping the result of \texttt{output} to \texttt{PP.putDoc} in order to print type $a$ to the standard output. 
+This function is shared by all the \texttt{Pretty} instances. 

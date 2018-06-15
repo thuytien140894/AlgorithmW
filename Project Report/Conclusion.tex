@@ -1,0 +1,21 @@
+Our implementation of the algorithm W modeled after the formal 
+definitions of Hindley-Milner type inference presented in Damas and Milner \cite{damas}. 
+We also extended the original $\lambda$-calculus used to demonstrate the algorithm 
+W with arithmetic, boolean, and conditional expressions. The inference rule for 
+arithmetic and boolean expressions ($\texttt{succ} \: e$, $\texttt{pred} \: e$, 
+$\texttt{iszero} \: e$) is a simpler version of the inference rule for 
+function applications in which the operator type is constant. In the case of 
+a conditional expression, the type system ensures that the expression 
+has a boolean condition and that its two branch types are equivalent. The 
+unification procedure is used to either map a type variable to a precise 
+type or check for equivalence between two precise types. Type inference 
+relies on this procedure to specify type variables when more 
+context about their precise types is given. 
+
+Besides the type inference procedure, our implementation also 
+includes a parser and a pretty printer to abstract the users 
+from the internal representation of the language. As a result, 
+the pattern matching feature in Haskell proves to be a powerful 
+and intuitive tool to handle different cases for each language construct 
+during both parsing and type inference. One future improvement 
+for the project could include adding type inference support for subtyping.
